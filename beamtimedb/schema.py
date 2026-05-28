@@ -13,12 +13,12 @@ create_beamtimedb('beamtime', server='postgresql', create=True,
 import time
 from datetime import datetime
 
-from sqlalchemy import (MetaData, create_engine, text, Table, Column,
+from sqlalchemy import (MetaData, create_engine, Text, Table, Column,
                         ForeignKey, Integer, Boolean, String, Text, DateTime)
 
 from sqlalchemy_utils import database_exists, create_database
 
-from .simpledb import SimpleDB
+from simpledb import SimpleDB
 
 # some status values
 ESAF_STATUS = ('Pending', 'Approved', 'Rejected', 'Conditional Approval')
@@ -126,9 +126,13 @@ def create_beamtimedb(dbname, server='postgresql', create=True,
                        Column('id', Integer, primary_key=True),
                        Column('name', String(64)))                       
 
-    folder_status = Table('esaf_status', metadata,
+    folder_status = Table('folder_status', metadata,
                        Column('id', Integer, primary_key=True),
-                       Column('name', String(64)))                       
+                       Column('name', String(64)))
+
+    process_status = Table('process_status', metadata,
+                       Column('id', Integer, primary_key=True),
+                       Column('name', String(64)))                    
     
     insts = Table('institution', metadata,
                   Column('id', Integer, primary_key=True),
@@ -156,7 +160,7 @@ def create_beamtimedb(dbname, server='postgresql', create=True,
                       Column('name', String(512)),
                       Column('user_name', String(64)),
                       Column('base_dir', String(512)),                      
-                      Column('pvlog_template', text),
+                      Column('pvlog_template', Text),
                       PointerCol('beamline'),
                       )
 
@@ -268,3 +272,14 @@ def create_beamtimedb(dbname, server='postgresql', create=True,
 
     print(f"Created database for beamlinedb: '{dbname}'")
     return
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="Create a BeamtimeDB")
+    parser.add_argument('dbname', help='name of database to create')
+    parser.add_argument('--host', default='', help='hostname (e.g. localhost)')
+    parser.add_argument('--port', default=5432, type=int, help='port number for database')
+    parser.add_argument('--user', default='', help='user name for database')
+    parser.add_argument('--password', default='', help='password for database')
+    args = parser.parse_args()
+    create_beamtimedb(args.dbname, host=args.host, port=args.port, user=args.user, password=args.password)
