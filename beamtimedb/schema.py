@@ -157,7 +157,7 @@ def create_beamtimedb(dbname, server='postgresql', create=True,
                       Column('user_name', String(64)),
                       Column('base_dir', String(512)),                      
                       Column('pvlog_template', text),
-                      PointerColumn('beamline'),
+                      PointerCol('beamline'),
                       )
 
     acknow = Table('acknowledgment', metadata,
