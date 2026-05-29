@@ -162,6 +162,7 @@ def create_beamtimedb(dbname, server='postgresql', create=True,
                       Column('base_dir', String(512)),                      
                       Column('pvlog_template', Text),
                       PointerCol('beamline'),
+                      Column('station', String(255)),
                       )
 
     acknow = Table('acknowledgment', metadata,
@@ -192,16 +193,6 @@ def create_beamtimedb(dbname, server='postgresql', create=True,
                       StrCol('name'),
                       StrCol('value'))
 
-    queue = Table('queue', metadata,
-                      Column('id', Integer, primary_key=True),
-                      Column('experiment_number', Integer),
-                      Column('proposal_number', Integer),
-                      StrCol('title'),
-                      StrCol('acknowledgements'),
-                      StrCol('data_path'),
-                      StrCol('pvlog_path'),
-                      Column('doi', Integer))
-
     experiments = Table('experiment', metadata,
                         Column('id', Integer, primary_key=True),
                         Column('time_request', Integer),                        
@@ -229,6 +220,17 @@ def create_beamtimedb(dbname, server='postgresql', create=True,
                         Column('needs_pvlog', Boolean, default=True),
                         StrCol('pvlog_file'),
                         )
+    
+    queue = Table('queue', metadata,
+                      Column('id', Integer, primary_key=True),
+                      PointerCol('experiment'),
+                      Column('experiment_number', Integer),
+                      Column('proposal_number', Integer),
+                      StrCol('title'),
+                      StrCol('acknowledgements'),
+                      StrCol('data_path'),
+                      StrCol('pvlog_path'),
+                      Column('doi', Integer))
     
     # join tables for many-to-one relations
     expt_user = Table('experiment_person', metadata,
