@@ -211,8 +211,8 @@ def create_beamtimedb(dbname, server='postgresql', create=True,
                         Column('start_date', DateTime),
                         Column('end_date', DateTime),
                         Column('folder_create_time', DateTime),
-                        StrCol('user_folder'),
-                        StrCol('data_doi'),
+                        StrCol('folder'),
+                        StrCol('sees_doi'),
                         StrCol('esaf_pdf_file'),
                         StrCol('proposal_pdf_file'),
                         Column('needs_doi', Boolean, default=True),
@@ -230,7 +230,11 @@ def create_beamtimedb(dbname, server='postgresql', create=True,
                       StrCol('acknowledgements'),
                       StrCol('data_path'),
                       StrCol('pvlog_path'),
-                      Column('doi', Integer))
+                      Column('doi', Integer),
+                      Column('create_doi', Boolean, default=True),
+                      Column('draft_doi', Boolean, default=True),
+    )
+                      
     
     # join tables for many-to-one relations
     expt_user = Table('experiment_person', metadata,
