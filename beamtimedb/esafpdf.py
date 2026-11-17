@@ -2,12 +2,21 @@
 extract some information from text from ESAF PDF
 """
 
+import re
 from glob import glob
 from pathlib import Path
 
 from markitdown import MarkItDown
 from PyPDF2 import PdfReader
 from .beamtimedb import BeamtimeDB
+
+def _parse_poc_name(line):
+    """Extracts the Point of Contact line."""
+    m = re.match(r'^([A-Z][A-Z\s]+),\s+([A-Z][A-Z\s]*?)(?=\s+[A-Z][A-Z\s]+,|\s+\d{2}-[A-Z]|$)', line.strip())
+    if m:
+        return m.group(1).strip().title(), m.group(2).strip().title()
+    return None, None
+
 
 def read_esaf_header(fname):
     md = MarkItDown()
@@ -21,10 +30,22 @@ def read_esaf_header(fname):
              'start_datetime': None,
              'end_datetime': None,
              'spokesperson': None,
+             'beamline_contact_last': None,
+             'beamline_contact_first': None,
              'experiment_type': None}
-    
+
+    capture_poc = False
     for line in result.text_content.split('\n'):
-        if line.startswith('Printed date:'):
+        if capture_poc:
+            if not line.strip():
+                continue
+            if re.match(r'^[A-Z][A-Z\s]+,\s+[A-Z]', line):
+                last, first = _parse_poc_name(line)
+                if last:
+                    data['beamline_contact_last'] = last
+                    data['beamline_contact_first'] = first
+                capture_poc = False
+        elif line.startswith('Printed date:'):
             data['printed_date'] = line.replace('Printed date:', '').strip()
         elif line.startswith('ID Start Date:'):
             data['start_datetime'] = line.replace('ID Start Date:', '').strip()
@@ -38,7 +59,6 @@ def read_esaf_header(fname):
             data['spokesperson'] = line.replace('Spokesperson:', '').strip()
         elif line.startswith('GUP ID:'):
             data['proposal_id'] = line.replace('GUP ID:', '').strip()
-            
         elif line.startswith('Experiment ID:'):
             words = line.replace('Experiment ID:', '').strip().split()
             data['experiment_id'] = words[0]
@@ -47,12 +67,13 @@ def read_esaf_header(fname):
             words = line.replace('ESAF ID:', '').strip().split()
             data['experiment_id'] = words[0]
             data['experiment_type'] = words[1].replace('(', '').replace(')', '')
-            
         elif line.startswith('PEN:'):
             data['pen_key'] = line.replace('PEN:', '').strip()
             data['pen_line'] = line
             words = data['pen_key'].split('-')
             data['beamline'] = '-'.join(words[:2])
+        elif line.startswith('Point of Contact'):
+            capture_poc = True
     return data
 
 # from pypdf import PdfReader
@@ -171,14 +192,27 @@ def read_esaf_pdfs(run=None):
             except ValueError:
                 proprow = None
                 data['proposal_id'] = 0                
+            if data['beamline_contact_last']:
+                try:
+                    contacts = beamdb.get_users(
+                        last_name=data['beamline_contact_last'],
+                        first_name=data['beamline_contact_first'],
+                    )
+                    if contacts is None:
+                        contacts = beamdb.get_users(last_name=data['beamline_contact_last'])
+                    if contacts:
+                        beamdb.update('experiment', where={'id': int(data['experiment_id'])},
+                                      beamline_contact_id=contacts[0].id)
+                        print(f"  set beamline_contact={data['beamline_contact_last']} on experiment {data['experiment_id']}")
+                except Exception as exc:
+                    print(f"  could not set beamline_contact on experiment {data['experiment_id']}: {exc}")
             if proprow is not None:
                 try:
                     beamdb.update('experiment', where={'id': int(data['experiment_id'])},
-                              proposal_id=int(data['proposal_id']), beamline_id=bl_id,
-                              run_id=run_id)
+                                  proposal_id=int(data['proposal_id']),
+                                  beamline_id=bl_id, run_id=run_id)
                 except Exception:
-                    print("could not udpate experiment from PDF")
-                    pass
+                    print("could not update experiment from PDF")
 
               
 
