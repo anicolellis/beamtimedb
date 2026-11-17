@@ -22,14 +22,14 @@ app = FastAPI(lifespan=lifespan)
 # Data structure containing all tables to create generic endpoints for.
 # Assigns api prefixes and tags for each table.
 tables = (
-    (T.user_types,     "/user-types",       "lookups"),
-    (T.user_level,     "/user-levels",      "lookups"),
-    (T.esaf_type,      "/esaf-types",       "lookups"),
-    (T.esaf_status,    "/esaf-statuses",    "lookups"),
-    (T.folder_status,  "/folder-statuses",  "lookups"),
-    (T.process_status, "/process-statuses", "lookups"),
-    (T.runs,           "/runs",             "lookups"),
-    (T.beamlines,      "/beamlines",        "lookups"),
+    (T.user_types,     "/user-types",       "static"),
+    (T.user_level,     "/user-levels",      "static"),
+    (T.esaf_type,      "/esaf-types",       "static"),
+    (T.esaf_status,    "/esaf-statuses",    "static"),
+    (T.folder_status,  "/folder-statuses",  "static"),
+    (T.process_status, "/process-statuses", "static"),
+    (T.runs,           "/runs",             "experiments"),
+    (T.beamlines,      "/beamlines",        "static"),
     (T.insts,          "/institutions",     "people"),
     (T.users,          "/people",           "people"),
     (T.funding,        "/funding",          "experiments"),
