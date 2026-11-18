@@ -23,7 +23,7 @@ def find_orcid(last_name, first_name, email=None, affiliation=None):
     """Finds a unique ORCID iD for a person."""
     if email:
         with suppress(HTTPError, URLError):
-            hits = _search(f"email:{email}")
+            hits = _search(f'email:"{email}"')
             if len(hits) == 1:
                 return hits[0]
 
