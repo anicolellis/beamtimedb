@@ -28,9 +28,14 @@ def find_orcid(last_name, first_name, email=None, affiliation=None):
                 return hits[0]
 
     if last_name and first_name:
-        q = f'family-name:"{last_name}" AND given-names:"{first_name}"'
         if affiliation:
-            q += f' AND affiliation-org-name:"{affiliation}"'
+            q = f'family-name:"{last_name}" AND given-names:"{first_name}" AND affiliation-org-name:"{affiliation}"'
+            with suppress(HTTPError, URLError):
+                hits = _search(q)
+                if len(hits) == 1:
+                    return hits[0]
+
+        q = f'family-name:"{last_name}" AND given-names:"{first_name}"'
         with suppress(HTTPError, URLError):
             hits = _search(q)
             if len(hits) == 1:
