@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     db_host: str = "localhost"
     db_name: str
     db_port: int
+    database_uri: SecretStr
 
     # Define file path from project root for .env file.
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")

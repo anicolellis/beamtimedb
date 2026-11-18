@@ -11,7 +11,7 @@ from beamtimedb.config.config import Settings
 settings = Settings()
 
 # Create engine
-engine = create_engine(f"postgresql+psycopg2://{settings.db_uname.get_secret_value()}:{settings.db_pwd.get_secret_value()}@{settings.db_host}:{settings.db_port}/{settings.db_name}")
+engine = create_engine(settings.database_uri.get_secret_value())
 
 # Session generator
 def get_conn() -> Iterator[Connection]:
