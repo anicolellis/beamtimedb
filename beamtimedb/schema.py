@@ -224,6 +224,7 @@ def create_beamtimedb(dbname, server='postgresql', create=True,
                         Column('needs_folder', Boolean, default=True),
                         Column('needs_pvlog', Boolean, default=True),
                         StrCol('pvlog_file'),
+                        IntCol('etr_number'),
                         )
     
     # join tables for many-to-one relations
