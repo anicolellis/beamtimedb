@@ -138,9 +138,14 @@ def create_beamtimedb(dbname, server='postgresql', create=True,
 
     funding = Table('funding', metadata,
                   Column('id', Integer, primary_key=True),
-                  Column('agency',      String(512)),
-                  Column('division',    String(512)),
-                  Column('grant_number', String(512)) )
+                  Column('source',      String(512)),
+                  Column('details',     String(512)),
+                  Column('grant_number', String(512)),
+                  Column('percentage',  Integer) )
+
+    prop_fund = Table('proposal_funding', metadata,
+                  PointerCol('proposal'),
+                  PointerCol('funding'))
     
 
     runs = Table('run', metadata,
@@ -180,7 +185,18 @@ def create_beamtimedb(dbname, server='postgresql', create=True,
     proposals = Table('proposal', metadata,
                       Column('id', Integer, primary_key=True),
                       StrCol('title'),
-                      PointerCol('spokesperson', other='person'))
+                      PointerCol('spokesperson', other='person'),
+                      StrCol('proposal_call'),
+                      StrCol('proposal_type'),
+                      StrCol('co_pi'),
+                      StrCol('primary_area'),
+                      StrCol('additional_areas'),
+                      StrCol('review_panel'),
+                      StrCol('run_cycle'),
+                      StrCol('status'),
+                      Column('submitted_date', DateTime),
+                      StrCol('beamlines'),
+                      StrCol('pdf_file'))
 
     pvlog_template = Table('pvlog_template', metadata,
                       Column('id', Integer, primary_key=True),
