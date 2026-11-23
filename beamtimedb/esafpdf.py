@@ -259,36 +259,39 @@ def read_esaf_pdfs(run=None):
                     print("could not update experiment from PDF")
 
             if data['personnel']:
-                try:
-                    type_rows = {row.name: row.id for row in beamdb.get_rows('user_type')}
-                    ep_rows = beamdb.get_rows('experiment_person',
-                                             where={'experiment_id': int(data['experiment_id'])})
-                    for ep in ep_rows:
-                        person = beamdb.get_user(id=ep.person_id)
-                        if person is None:
-                            continue
-                        key = (person.first_name.lower(), person.last_name.lower())
-                        user_type = data['personnel'].get(key)
-                        if user_type and user_type in type_rows:
-                            beamdb.update('experiment_person',
-                                          where={'experiment_id': int(data['experiment_id']),
-                                                 'person_id': ep.person_id},
-                                          user_type_id=type_rows[user_type])
-                            print(f"  user_type={user_type} -> {person.first_name} {person.last_name}")
-                except Exception as exc:
-                    print(f"  could not set user_type on experiment {data['experiment_id']}: {exc}")
+                type_rows = {row.name: row.id for row in beamdb.get_rows('user_type')}
 
-                # Populate experiment_staff directly from PDF — staff may not be in experiment_person.
-                # Use filename as fallback ESAF ID source when header parsing yields 0.
+                # Use filename as fallback
                 esaf_id = int(data['experiment_id'])
                 if esaf_id == 0:
                     m = re.search(r'ESAF-(\d+)', Path(pdffile).name)
                     if m:
                         esaf_id = int(m.group(1))
+
                 if esaf_id == 0:
-                    print(f"  skipping experiment_staff: could not determine experiment ID")
+                    print(f"  skipping personnel: could not determine experiment ID")
                 else:
                     try:
+                        ep_rows = beamdb.get_rows('experiment_person',
+                                                 where={'experiment_id': esaf_id})
+                        for ep in ep_rows:
+                            person = beamdb.get_user(id=ep.person_id)
+                            if person is None:
+                                continue
+                            key = (person.first_name.lower(), person.last_name.lower())
+                            user_type = data['personnel'].get(key)
+                            if user_type and user_type in type_rows:
+                                beamdb.update('experiment_person',
+                                              where={'experiment_id': esaf_id,
+                                                     'person_id': ep.person_id},
+                                              user_type_id=type_rows[user_type])
+                                print(f"  user_type={user_type} -> {person.first_name} {person.last_name}")
+                    except Exception as exc:
+                        print(f"  could not set user_type on experiment {esaf_id}: {exc}")
+
+                if esaf_id != 0:
+                    try:
+                        staff_type_id = type_rows.get('Beamline Staff')
                         for (first, last), user_type in data['personnel'].items():
                             if user_type != 'Beamline Staff':
                                 continue
@@ -296,20 +299,21 @@ def read_esaf_pdfs(run=None):
                             if not persons:
                                 persons = beamdb.get_users(last_name=last.title())
                             if not persons:
-                                print(f"  experiment_staff: person not found: {first} {last}")
+                                print(f"  staff not found in DB: {first} {last}")
                                 continue
                             person = persons[0]
-                            existing = beamdb.get_row('experiment_staff', where={
+                            existing = beamdb.get_row('experiment_person', where={
                                 'experiment_id': esaf_id,
                                 'person_id': person.id,
                             })
                             if existing is None:
-                                beamdb.add_row('experiment_staff',
+                                beamdb.add_row('experiment_person',
                                                experiment_id=esaf_id,
-                                               person_id=person.id)
-                                print(f"  added {person.first_name} {person.last_name} to experiment_staff")
+                                               person_id=person.id,
+                                               user_type_id=staff_type_id)
+                                print(f"  added {person.first_name} {person.last_name} as Beamline Staff")
                     except Exception as exc:
-                        print(f"  could not populate experiment_staff for experiment {esaf_id}: {exc}")
+                        print(f"  could not add staff to experiment_person for experiment {esaf_id}: {exc}")
 
 
 
