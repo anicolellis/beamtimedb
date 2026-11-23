@@ -246,6 +246,9 @@ def _apply_etrs(beamdb, fname, run_map):
 
     print(f"Proposal {proposal_id}: {len(data['etrs'])} ETR found")
 
+    if beamdb.get_row('proposal', where={'id': proposal_id}) is not None:
+        beamdb.update('proposal', where={'id': proposal_id}, pdf_file=fname)
+
     for etr in data['etrs']:
         run_cycle = etr['run_cycle']
         beamline = etr['beamline']
