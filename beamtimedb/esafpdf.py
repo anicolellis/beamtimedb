@@ -273,6 +273,9 @@ def read_esaf_pdfs(run=None):
                                                  'person_id': ep.person_id},
                                           user_type_id=type_rows[user_type])
                             print(f"  user_type={user_type} -> {person.first_name} {person.last_name}")
+                            if user_type == 'Beamline Staff' and not person.is_staff:
+                                beamdb.update('person', where={'id': ep.person_id}, is_staff=True)
+                                print(f"  marked {person.first_name} {person.last_name} as staff")
                 except Exception as exc:
                     print(f"  could not set user_type on experiment {data['experiment_id']}: {exc}")
 
