@@ -249,6 +249,10 @@ def create_beamtimedb(dbname, server='postgresql', create=True,
                       PointerCol('person'),
                       PointerCol('user_type'))
 
+    expt_staff = Table('experiment_staff', metadata,
+                       PointerCol('experiment'),
+                       PointerCol('person'))
+
     expt_tech = Table('experiment_technique', metadata,
                       PointerCol('experiment'),
                       PointerCol('technique'))
