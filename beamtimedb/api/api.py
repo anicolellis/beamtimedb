@@ -27,7 +27,6 @@ tables = (
     (T.esaf_type,      "/esaf-types",       "static"),
     (T.esaf_status,    "/esaf-statuses",    "static"),
     (T.folder_status,  "/folder-statuses",  "static"),
-    (T.process_status, "/process-statuses", "static"),
     (T.runs,           "/runs",             "experiments"),
     (T.beamlines,      "/beamlines",        "static"),
     (T.insts,          "/institutions",     "people"),

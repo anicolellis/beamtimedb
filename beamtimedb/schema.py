@@ -13,17 +13,17 @@ create_beamtimedb('beamtime', server='postgresql', create=True,
 import time
 from datetime import datetime
 
-from sqlalchemy import (MetaData, create_engine, Text, Table, Column,
+from sqlalchemy import (create_engine, Text, Table, Column,
                         ForeignKey, Integer, Boolean, String, Text, DateTime)
 
 from sqlalchemy_utils import database_exists, create_database
 
 from .simpledb import SimpleDB
 from .tables import (info, messages, user_types, user_level, esaf_type,
-                     esaf_status, folder_status, process_status, insts,
-                     funding, runs, beamlines, technique, acknow, users,
+                     esaf_status, folder_status, insts,
+                     funding, prop_fund, runs, beamlines, technique, acknow, users,
                      proposals, pvlog_template, experiments, queue, expt_user,
-                     expt_tech, expt_fund, expt_acknows)
+                     expt_staff, expt_tech, expt_fund, expt_acknows)
 
 ENGINE = None
 
@@ -43,7 +43,6 @@ BEAMLINES = ('13-BM-C', '13-BM-D', '13-ID-C,D', '13-ID-E', '6-BM-A,B', '3-ID-B,C
 
 FOLDER_STATUS = ('unknown', 'requested', 'pending', 'created', 'cancelled', 'deleted')
 
-PROCESS_STATUS = ('new', 'processed', 'modified', 'completed', 'locked')
 
 def hasdb(dbname, create=False, server='postgresql',
              user='', password='', host='', port=5432):
@@ -111,7 +110,6 @@ def create_beamtimedb(dbname, server='postgresql', create=True,
     # add some initial data:
     for table, values in (('esaf_status', ESAF_STATUS),
                           ('folder_status', FOLDER_STATUS),
-                          ('process_status', PROCESS_STATUS),
                           ('esaf_type', ESAF_TYPES),
                           ('user_type', USER_TYPES),
                           ('user_level', USER_LEVEL),

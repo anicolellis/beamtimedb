@@ -50,7 +50,7 @@ esaf_status = Table('esaf_status', metadata,
                     Column('id', Integer, primary_key=True),
                     Column('name', String(64)))                       
 
-folder_status = Table('esaf_status', metadata,
+folder_status = Table('folder_status', metadata,
                     Column('id', Integer, primary_key=True),
                     Column('name', String(64)))                       
 
@@ -145,7 +145,6 @@ experiments = Table('experiment', metadata,
                     PointerCol('esaf_type'),
                     PointerCol('esaf_status'),
                     PointerCol('folder_status'),
-                    PointerCol('process_status'),
                     PointerCol('technique'),
                     PointerCol('beamline'),
                     PointerCol('proposal'),
