@@ -10,6 +10,48 @@ from markitdown import MarkItDown
 from PyPDF2 import PdfReader
 from .beamtimedb import BeamtimeDB
 
+_KNOWN_USER_TYPES = (
+    'On-site', 'Remote', 'Mail-in', 'Off-site/Co-proposer', 'Observer', 'Beamline Staff',
+)
+
+
+_TYPE_PATTERNS = [
+    (re.compile(r'^On-site\b', re.I), 'On-site'),
+    (re.compile(r'^Remote\b', re.I), 'Remote'),
+    (re.compile(r'^Mail-in\b', re.I), 'Mail-in'),
+    (re.compile(r'^Off-site', re.I), 'Off-site/Co-proposer'),
+    (re.compile(r'^Observer\b', re.I), 'Observer'),
+    (re.compile(r'^Beamline\s+Staff\b', re.I), 'Beamline Staff'),
+    (re.compile(r'^Beamli\b', re.I), 'Beamline Staff'),  # PDF wraps "Beamline Staff" across two lines
+]
+
+_STOP_RE = re.compile(r'^(Beamline Comments|APS Experiment Review Board)', re.I)
+
+
+def _parse_personnel_types(text):
+    """Parse the Experiment Personnel table. Returns {(first_lower, last_lower): user_type}.
+
+    The PDF renders the table as plain text. 'Beamline Staff' wraps across two lines:
+    the person's data is on the 'Beamli ...' line; 'ne Staff' appears alone on the next.
+    """
+    result = {}
+    idx = text.lower().find('experiment personnel and training')
+    if idx < 0:
+        return result
+    for line in text[idx:].split('\n'):
+        stripped = line.strip()
+        if _STOP_RE.match(stripped):
+            break
+        for pattern, ut in _TYPE_PATTERNS:
+            m = pattern.match(stripped)
+            if m:
+                parts = stripped[m.end():].split()
+                if len(parts) >= 2:
+                    result[(parts[0].lower(), parts[1].lower())] = ut
+                break
+    return result
+
+
 def _parse_poc_name(line):
     """Extracts the Point of Contact line."""
     m = re.match(r'^([A-Z][A-Z\s]+),\s+([A-Z][A-Z\s]*?)(?=\s+[A-Z][A-Z\s]+,|\s+\d{2}-[A-Z]|$)', line.strip())
@@ -32,8 +74,10 @@ def read_esaf_header(fname):
              'spokesperson': None,
              'beamline_contact_last': None,
              'beamline_contact_first': None,
-             'experiment_type': None}
+             'experiment_type': None,
+             'personnel': {}}
 
+    data['personnel'] = _parse_personnel_types(result.text_content)
     capture_poc = False
     for line in result.text_content.split('\n'):
         if capture_poc:
@@ -214,7 +258,64 @@ def read_esaf_pdfs(run=None):
                 except Exception:
                     print("could not update experiment from PDF")
 
-              
+            if data['personnel']:
+                type_rows = {row.name: row.id for row in beamdb.get_rows('user_type')}
+
+                # Use filename as fallback
+                esaf_id = int(data['experiment_id'])
+                if esaf_id == 0:
+                    m = re.search(r'ESAF-(\d+)', Path(pdffile).name)
+                    if m:
+                        esaf_id = int(m.group(1))
+
+                if esaf_id == 0:
+                    print(f"  skipping personnel: could not determine experiment ID")
+                else:
+                    try:
+                        ep_rows = beamdb.get_rows('experiment_person',
+                                                 where={'experiment_id': esaf_id})
+                        for ep in ep_rows:
+                            person = beamdb.get_user(id=ep.person_id)
+                            if person is None:
+                                continue
+                            key = (person.first_name.lower(), person.last_name.lower())
+                            user_type = data['personnel'].get(key)
+                            if user_type and user_type in type_rows:
+                                beamdb.update('experiment_person',
+                                              where={'experiment_id': esaf_id,
+                                                     'person_id': ep.person_id},
+                                              user_type_id=type_rows[user_type])
+                                print(f"  user_type={user_type} -> {person.first_name} {person.last_name}")
+                    except Exception as exc:
+                        print(f"  could not set user_type on experiment {esaf_id}: {exc}")
+
+                if esaf_id != 0:
+                    try:
+                        staff_type_id = type_rows.get('Beamline Staff')
+                        for (first, last), user_type in data['personnel'].items():
+                            if user_type != 'Beamline Staff':
+                                continue
+                            persons = beamdb.get_users(last_name=last.title(), first_name=first.title())
+                            if not persons:
+                                persons = beamdb.get_users(last_name=last.title())
+                            if not persons:
+                                print(f"  staff not found in DB: {first} {last}")
+                                continue
+                            person = persons[0]
+                            existing = beamdb.get_row('experiment_person', where={
+                                'experiment_id': esaf_id,
+                                'person_id': person.id,
+                            })
+                            if existing is None:
+                                beamdb.add_row('experiment_person',
+                                               experiment_id=esaf_id,
+                                               person_id=person.id,
+                                               user_type_id=staff_type_id)
+                                print(f"  added {person.first_name} {person.last_name} as Beamline Staff")
+                    except Exception as exc:
+                        print(f"  could not add staff to experiment_person for experiment {esaf_id}: {exc}")
+
+
 
 def read_pending_pdfs(run=None):
     beamdb = get_beamline_names()

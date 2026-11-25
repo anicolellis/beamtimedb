@@ -1,5 +1,4 @@
 import json
-import time
 from contextlib import suppress
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -7,7 +6,7 @@ from urllib.request import Request, urlopen
 
 _API_BASE = "https://pub.orcid.org/v3.0"
 _HEADERS = {"Accept": "application/json"}
-_TIMEOUT = 10
+_TIMEOUT = 30
 
 
 def _search(query, rows=5):
@@ -29,13 +28,13 @@ def find_orcid(last_name, first_name, email=None, affiliation=None):
 
     if last_name and first_name:
         if affiliation:
-            q = f'family-name:"{last_name}" AND given-names:"{first_name}" AND affiliation-org-name:"{affiliation}"'
+            q = f'family-name:{last_name} AND given-names:{first_name} AND affiliation-org-name:"{affiliation}"'
             with suppress(HTTPError, URLError):
                 hits = _search(q)
                 if len(hits) == 1:
                     return hits[0]
 
-        q = f'family-name:"{last_name}" AND given-names:"{first_name}"'
+        q = f'family-name:{last_name} AND given-names:{first_name}'
         with suppress(HTTPError, URLError):
             hits = _search(q)
             if len(hits) == 1:

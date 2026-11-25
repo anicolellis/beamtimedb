@@ -219,7 +219,11 @@ class BeamtimeDB(SimpleDB):
         """
         return self.get_row('proposal',where={'id': prop_id})
 
-    def add_proposal(self, prop_id, title=None, spokesperson_id=None):
+    def add_proposal(self, prop_id, title=None, spokesperson_id=None,
+                     proposal_call=None, proposal_type=None, co_pi=None,
+                     primary_area=None, additional_areas=None, review_panel=None,
+                     run_cycle=None, status=None, submitted_date=None,
+                     beamlines=None, pdf_file=None):
         print("Add Proposal " , prop_id, title, spokesperson_id)
         prop = self.get_proposal(prop_id)
         if prop is None:
@@ -229,7 +233,19 @@ class BeamtimeDB(SimpleDB):
                 kws['title'] = title
             if spokesperson_id is not None:
                 kws['spokesperson_id'] = spokesperson_id
-                
+            for field, val in (('proposal_call', proposal_call),
+                               ('proposal_type', proposal_type),
+                               ('co_pi', co_pi),
+                               ('primary_area', primary_area),
+                               ('additional_areas', additional_areas),
+                               ('review_panel', review_panel),
+                               ('run_cycle', run_cycle),
+                               ('status', status),
+                               ('submitted_date', submitted_date),
+                               ('beamlines', beamlines),
+                               ('pdf_file', pdf_file)):
+                if val is not None:
+                    kws[field] = val
             self.add_row('proposal', **kws)
             prop = self.get_proposal(prop_id)
         return prop
