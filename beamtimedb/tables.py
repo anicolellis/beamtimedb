@@ -50,13 +50,9 @@ esaf_status = Table('esaf_status', metadata,
                     Column('id', Integer, primary_key=True),
                     Column('name', String(64)))                       
 
-folder_status = Table('folder_status', metadata,
+folder_status = Table('esaf_status', metadata,
                     Column('id', Integer, primary_key=True),
-                    Column('name', String(64)))
-
-process_status = Table('process_status', metadata,
-                    Column('id', Integer, primary_key=True),
-                    Column('name', String(64)))                    
+                    Column('name', String(64)))                       
 
 insts = Table('institution', metadata,
                 Column('id', Integer, primary_key=True),
@@ -66,9 +62,14 @@ insts = Table('institution', metadata,
 
 funding = Table('funding', metadata,
                 Column('id', Integer, primary_key=True),
-                Column('agency',      String(512)),
-                Column('division',    String(512)),
-                Column('grant_number', String(512)) )
+                Column('source',      String(512)),
+                Column('details',     String(512)),
+                Column('grant_number', String(512)),
+                Column('percentage',  Integer) )
+
+prop_fund = Table('proposal_funding', metadata,
+                PointerCol('proposal'),
+                PointerCol('funding'))
 
 
 runs = Table('run', metadata,
@@ -86,7 +87,6 @@ technique = Table('technique', metadata,
                     Column('base_dir', String(512)),                      
                     Column('pvlog_template', Text),
                     PointerCol('beamline'),
-                    Column('station', String(255)),
                     )
 
 acknow = Table('acknowledgment', metadata,
@@ -109,13 +109,34 @@ users = Table('person', metadata,
 proposals = Table('proposal', metadata,
                     Column('id', Integer, primary_key=True),
                     StrCol('title'),
-                    PointerCol('spokesperson', other='person'))
+                    PointerCol('spokesperson', other='person'),
+                    StrCol('proposal_call'),
+                    StrCol('proposal_type'),
+                    StrCol('co_pi'),
+                    StrCol('primary_area'),
+                    StrCol('additional_areas'),
+                    StrCol('review_panel'),
+                    StrCol('run_cycle'),
+                    StrCol('status'),
+                    Column('submitted_date', DateTime),
+                    StrCol('beamlines'),
+                    StrCol('pdf_file'))
 
 pvlog_template = Table('pvlog_template', metadata,
                     Column('id', Integer, primary_key=True),
                     PointerCol('beamline'),
                     StrCol('name'),
                     StrCol('value'))
+
+queue = Table('queue', metadata,
+                    Column('id', Integer, primary_key=True),
+                    Column('experiment_number', Integer),
+                    Column('proposal_number', Integer),
+                    StrCol('title'),
+                    StrCol('acknowledgements'),
+                    StrCol('data_path'),
+                    StrCol('pvlog_path'),
+                    Column('doi', Integer))
 
 experiments = Table('experiment', metadata,
                     Column('id', Integer, primary_key=True),
@@ -135,36 +156,26 @@ experiments = Table('experiment', metadata,
                     Column('start_date', DateTime),
                     Column('end_date', DateTime),
                     Column('folder_create_time', DateTime),
-                    StrCol('folder'),
-                    StrCol('sees_doi'),
+                    StrCol('user_folder'),
+                    StrCol('data_doi'),
                     StrCol('esaf_pdf_file'),
                     StrCol('proposal_pdf_file'),
                     Column('needs_doi', Boolean, default=True),
                     Column('needs_folder', Boolean, default=True),
                     Column('needs_pvlog', Boolean, default=True),
                     StrCol('pvlog_file'),
+                    IntCol('etr_number'),
                     )
-
-queue = Table('queue', metadata,
-                    Column('id', Integer, primary_key=True),
-                    PointerCol('experiment'),
-                    Column('experiment_number', Integer),
-                    Column('proposal_number', Integer),
-                    StrCol('title'),
-                    StrCol('acknowledgements'),
-                    StrCol('data_path'),
-                    StrCol('pvlog_path'),
-                    Column('doi', Integer),
-                    Column('create_doi', Boolean, default=True),
-                    Column('draft_doi', Boolean, default=True),
-)
-                    
 
 # join tables for many-to-one relations
 expt_user = Table('experiment_person', metadata,
                     PointerCol('experiment'),
                     PointerCol('person'),
                     PointerCol('user_type'))
+
+expt_staff = Table('experiment_staff', metadata,
+                    PointerCol('experiment'),
+                    PointerCol('person'))
 
 expt_tech = Table('experiment_technique', metadata,
                     PointerCol('experiment'),
